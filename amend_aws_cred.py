@@ -44,6 +44,8 @@ def rm_cred_from_env(creds):
     lines = f1.readlines()
     # move the pointer to the beginning of the file
     f1.seek(0)
+
+    # Set count to ensure first if passes the first time through
     count = 4
     for line in lines:
         count += 1

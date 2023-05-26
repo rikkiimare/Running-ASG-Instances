@@ -44,11 +44,13 @@ def rm_cred_from_env(creds):
     lines = f1.readlines()
     # move the pointer to the beginning of the file
     f1.seek(0)
+    count = 4
     for line in lines:
-        if line != aws_profile_name:
+        count += 1
+        if line != aws_profile_name and count > 3:
             f1.write(line)
-        else:
-            break
+        elif line == aws_profile_name:
+            count = 0
     f1.truncate()
     f1.close()
 

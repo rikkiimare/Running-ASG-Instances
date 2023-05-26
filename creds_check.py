@@ -20,9 +20,7 @@ def time_cred_file_mod():
     statbuf = os.stat(full_path)
     dt = datetime.fromtimestamp(statbuf.st_mtime)
     cdt = datetime.now()
-    # time_diff = cdt - dt
-    # sec_in_day = 24 * 60 * 60
-    # divmod(time_diff.days * sec_in_day + time_diff.seconds, 60)
+
     dt_str = dt.strftime( "%d-%m-%Y @ %H:%M:%S" )
     time_diff = cdt - dt
 

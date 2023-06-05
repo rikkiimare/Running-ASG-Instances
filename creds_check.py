@@ -59,7 +59,7 @@ if __name__ == '__main__':
     
     # Assign profile to environ var
     os.environ['AWS_PROFILE'] = profile_name
-    print(os.environ['AWS_PROFILE'])
+    print(f"{bcolours.HEADER} {os.environ['AWS_PROFILE']} {bcolours.ENDC}")
 
     # Works - commented out while working on the ~/.aws/credentials file
     s3 = boto3.client('s3')

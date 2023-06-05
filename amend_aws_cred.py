@@ -1,8 +1,9 @@
-from datetime import date
+from datetime import datetime
 import os
+from bcolours import bcolours as bc
 
 def set_cred_from_env(creds):
-    today = date.today()
+    today = datetime.today()
 
     aws_profile_name = creds[0]
     aws_access_key_id = creds[1]
@@ -29,7 +30,6 @@ def set_cred_from_env(creds):
 
     return aws_profile_name
 
-
 def rm_cred_from_env(creds):
     content = []
     aws_profile_name = creds[0]
@@ -55,6 +55,38 @@ def rm_cred_from_env(creds):
             count = 0
     f1.truncate()
     f1.close()
+
+def accept_creds():
+    # Take in input from user
+    print(f"{bc.OKGREEN}Enter/Paste your credentials content. Once done press Ctrl-D to save it.{bc.ENDC}")
+    contents = []
+    while True:
+        try:
+            line = input()
+        except EOFError:
+            break
+        contents.append(line)
+    return contents
+
+def time_cred_file_mod():
+    path = "~/.aws/credentials"
+    full_path = os.path.expanduser(path)
+    statbuf = os.stat(full_path)
+
+    # Get the last modified time from the file
+    dt = datetime.fromtimestamp(statbuf.st_mtime)
+    # Get current time
+    cdt = datetime.now()
+
+    # Change the format of file last modify time
+    dt_str = dt.strftime( "%d-%m-%Y @ %H:%M:%S" )
+    # Set difference in time between now and last modify
+    time_diff = cdt - dt
+
+    if time_diff.total_seconds() // 60 > 60:
+        print(f"{bc.FAIL}/.aws/credentials was last modified at {dt_str} which is {time_diff.total_seconds() // 60} minutes ago\n{bc.ENDC}")
+    else:
+        print(f"{bc.WARNING}/.aws/credentials was last modified at {dt_str} which is {time_diff.total_seconds() // 60} minutes ago\n{bc.ENDC}")
 
 if __name__ == '__main__':
     set_cred_from_env()

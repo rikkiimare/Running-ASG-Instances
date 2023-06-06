@@ -5,11 +5,12 @@ from bcolours import bcolours as bc
 
 import amend_aws_cred
 import find_profiles_in_credentials
+import display
 
 if __name__ == '__main__':
     
     # identify all account profiles within local credentials file
-    find_profiles_in_credentials.find_in_cred_file()
+    profile_name = find_profiles_in_credentials.find_in_cred_file()
 
     # Display the last modified time to the screen
     amend_aws_cred.time_cred_file_mod()
@@ -27,17 +28,16 @@ if __name__ == '__main__':
         # Add new credentials provided into the ~/.aws/credentials file
         profile_name = amend_aws_cred.set_cred_from_env(creds)
         
-        # Assign profile to environ var
-        os.environ['AWS_PROFILE'] = profile_name
     else:
         if "AWS_PROFILE" in os.environ:
-            print(f"{bc.OKBLUE}The script will continue with the currently set AWS_PROFILE ={bc.ENDC}{bc.HEADER} {os.environ['AWS_PROFILE']} {bc.ENDC}")
+            print(f"{bc.OKBLUE}The script will continue with the currently set AWS_PROFILE.{bc.ENDC}")
         else:
             print(f"{bc.WARNING}AWS_PROFILE environment variable is not set.{bc.ENDC}\n{bc.FAIL}The script will exit.{bc.ENDC}")
             quit()
     
-
-    print(f"{bc.HEADER} {os.environ['AWS_PROFILE']} {bc.ENDC}")
+    # Assign profile to environ var
+    os.environ['AWS_PROFILE'] = profile_name
+    print(f"\n{bc.HEADER} {os.environ['AWS_PROFILE']} {bc.ENDC}")
 
     # Works - commented out while working on the ~/.aws/credentials file
     # s3 = boto3.client('s3')
@@ -46,8 +46,30 @@ if __name__ == '__main__':
     # # Output bucket names
     # for bucket in response['Buckets']:
     #     print(f'    {bucket["Name"]}')
+    
+    asg = 'integration-production-waf'
+    asg_client = boto3.client('autoscaling', region_name='eu-west-2')
+    ec2_client = boto3.client('ec2', region_name='eu-west-2')
+    asg_response = asg_client.describe_auto_scaling_groups(AutoScalingGroupNames=[asg])
+    #response = client.describe_auto_scaling_instances()
+    instance_ids = []
 
-    client = boto3.client('autoscaling', region_name='eu-west-2')
-    # response = client.describe_auto_scaling_groups(AutoScalingGroupNames=['integration-production-iig-waf'])
-    response = client.describe_auto_scaling_instances()
-    print(response)
+    print(f"  {bc.OKCYAN} ASG group set to : {asg} {bc.ENDC}")
+    display.setup()
+
+    for i in asg_response['AutoScalingGroups']:
+        for k in i['Instances']:
+            #print(f"{k['InstanceId']}, {k['InstanceType']}, {k['LifecycleState']}, {k['HealthStatus']}, {k['AvailabilityZone']}")
+            instance_ids.append(k['InstanceId'])
+    
+    ec2_response = ec2_client.describe_instances(
+        InstanceIds = instance_ids
+        )
+    
+    for i in ec2_response['Reservations']:
+        for k in i['Instances']:
+            display.display(k)
+
+
+
+

@@ -18,8 +18,9 @@ def find_in_cred_file():
     for line in lines:
         if re.match(regex, line):
             print(line)
+            latest = line
     f1.close()
-
+    return latest[1:-2]
 
 if __name__ == '__main__':
     find_in_cred_file()

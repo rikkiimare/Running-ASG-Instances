@@ -1,4 +1,5 @@
 import boto3
+from botocore.exceptions import ClientError
 import os
 from datetime import datetime
 from bcolours import bcolours as bc
@@ -47,11 +48,28 @@ if __name__ == '__main__':
     # for bucket in response['Buckets']:
     #     print(f'    {bucket["Name"]}')
     
-    asg = 'integration-production-waf'
-    asg_client = boto3.client('autoscaling', region_name='eu-west-2')
-    ec2_client = boto3.client('ec2', region_name='eu-west-2')
-    asg_response = asg_client.describe_auto_scaling_groups(AutoScalingGroupNames=[asg])
-    #response = client.describe_auto_scaling_instances()
+    asg = input(f'{bc.OKBLUE}Please input the ASG name you are working with : {bc.ENDC}')
+    try:
+        asg_client = boto3.client('autoscaling', region_name='eu-west-2')
+    except ClientError as e:
+        print(e)
+        print(f"{bc.FAIL} There may be an issue with your credentials{bc.ENDC}")
+        sys.exit(1)
+
+    try:
+        ec2_client = boto3.client('ec2', region_name='eu-west-2')
+    except ClientError as e:
+        print(e)
+        print(f"{bc.FAIL} There may be an issue with your credentials{bc.ENDC}")
+        sys.exit(1)
+
+    try:
+        asg_response = asg_client.describe_auto_scaling_groups(AutoScalingGroupNames=[asg])
+    except Exception as ex:
+        print(f"Error - {ex}")
+        print(f"{bc.FAIL} There may be an issue with the ASG name you entered{bc.ENDC}")
+        sys.exit(1)
+
     instance_ids = []
 
     print(f"  {bc.OKCYAN} ASG group set to : {asg} {bc.ENDC}")

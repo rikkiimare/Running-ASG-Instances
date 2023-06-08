@@ -1,13 +1,13 @@
 from bcolours import bcolours as bc
 
-def display(self, indent=1):
+def display(asg, inst, indent=1):
         ind = '\t'*indent
-        state = self['State']
-        print(f"{ind}{self['InstanceId']}{ind}{self['InstanceType']}{ind}{self['LaunchTime']}{ind}{self['KeyName']}{ind}{state['Name']}")
+        state = asg['State']
+        print(f"{ind}{asg['InstanceId']}{ind}{asg['InstanceType']}{ind}{inst['HealthStatus']}{ind}{ind}{inst['AvailabilityZone']}{ind}{asg['LaunchTime']}{ind}{asg['KeyName']}{ind}{state['Name']}")
 
 def setup(indent=1):
       ind = '\t'*indent
-      print(f"{bc.BOLD}{bc.OKGREEN}{ind}Instance Id{ind}{ind}Instance Type{ind}Launch Date & Time{ind}{ind}Key Name{ind}State{bc.ENDC}")
+      print(f"{bc.BOLD}{bc.OKGREEN}{ind}Instance Id{ind}{ind}Instance Type{ind}Health Status{ind}AZ{ind}{ind}Launch Date & Time{ind}{ind}Key Name{ind}{ind}State{bc.ENDC}")
 
 
 if __name__ == '__main__':

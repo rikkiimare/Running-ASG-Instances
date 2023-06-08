@@ -47,8 +47,8 @@ if __name__ == '__main__':
     # # Output bucket names
     # for bucket in response['Buckets']:
     #     print(f'    {bucket["Name"]}')
-    
-    asg = input(f'{bc.OKBLUE}Please input the ASG name you are working with : {bc.ENDC}')
+    asg = 'integration-production-egress-waf'
+    # asg = input(f'{bc.OKBLUE}Please input the ASG name you are working with : {bc.ENDC}')
     try:
         asg_client = boto3.client('autoscaling', region_name='eu-west-2')
     except ClientError as e:
@@ -70,23 +70,49 @@ if __name__ == '__main__':
         print(f"{bc.FAIL} There may be an issue with the ASG name you entered{bc.ENDC}")
         sys.exit(1)
 
-    instance_ids = []
 
-    print(f"  {bc.OKCYAN} ASG group set to : {asg} {bc.ENDC}")
-    display.setup()
+
+    
+    # dict_you_want = {key: old_dict[key] for key in your_keys}
+    # listkeys = ['AutoScalingGroupName', 'MinSize' ]
+    # asg_dict = {key: asg_response['AutoScalingGroups'][0] for key in listkeys}
+    instance_ids = []
+    instance_vals = []
+    asg_dict = {}
+    inst_dict = {}
 
     for i in asg_response['AutoScalingGroups']:
+        asg_dict = {
+            'AutoScalingGroupName': i['AutoScalingGroupName'],
+            'MinSize': i['MinSize'],
+            'MaxSize': i['MaxSize'],
+            'DesiredCapacity': i['DesiredCapacity']
+        }
         for k in i['Instances']:
-            #print(f"{k['InstanceId']}, {k['InstanceType']}, {k['LifecycleState']}, {k['HealthStatus']}, {k['AvailabilityZone']}")
+            inst_dict = {
+                'InstanceId': k['InstanceId'],
+                'InstanceType': k['InstanceType'],
+                'HealthStatus': k['HealthStatus'],
+                'AvailabilityZone': k['AvailabilityZone']
+            }
+            instance_vals.append(inst_dict)
             instance_ids.append(k['InstanceId'])
     
+    asg_dict['Instances'] = instance_vals
+    
+    print(f"  {bc.OKCYAN} ASG group set to : {asg} {bc.ENDC} {bc.WARNING}Scaling Min/Desired/Max: {asg_dict['MinSize']}/{asg_dict['DesiredCapacity']}/{asg_dict['MaxSize']}{bc.ENDC}")
+    display.setup()
+
     ec2_response = ec2_client.describe_instances(
         InstanceIds = instance_ids
         )
     
     for i in ec2_response['Reservations']:
         for k in i['Instances']:
-            display.display(k)
+            # display.display(k)
+            for j in asg_dict['Instances']:
+                if k['InstanceId'] == j['InstanceId']:
+                    display.display(k,j)
 
 
 

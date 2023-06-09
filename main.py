@@ -6,13 +6,15 @@ from bcolours import bcolours as bc
 
 import amend_aws_cred
 import find_profiles_in_credentials
+import find_profiles_in_config
 import display
 
 if __name__ == '__main__':
     
     # TO LINE 43 COMMENTED OUT
     # # # identify all account profiles within local credentials file
-    # profile_name = find_profiles_in_credentials.find_in_cred_file()
+    # prof_name = find_profiles_in_credentials.find_in_cred_file()
+    prof_name = find_profiles_in_config.find_in_conf_file()
 
     # # Display the last modified time to the screen
     # amend_aws_cred.time_cred_file_mod()
@@ -28,7 +30,7 @@ if __name__ == '__main__':
     #     amend_aws_cred.rm_cred_from_env(creds)
 
     #     # Add new credentials provided into the ~/.aws/credentials file
-    #     profile_name = amend_aws_cred.set_cred_from_env(creds)
+    #     prof_name = amend_aws_cred.set_cred_from_env(creds)
         
     # else:
     #     if "AWS_PROFILE" in os.environ:
@@ -43,7 +45,7 @@ if __name__ == '__main__':
     # FROM LINE 13 COMMENTED OUT
 
     # Set sso credentials
-    boto3.setup_default_session(profile_name='072874872668_SreOnCall')
+    boto3.setup_default_session(profile_name=prof_name)
 
     # Works - commented out while working on the ~/.aws/credentials file
     # s3 = boto3.client('s3')

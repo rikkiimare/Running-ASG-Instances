@@ -49,10 +49,6 @@ if __name__ == '__main__':
     #     print(f'    {bucket["Name"]}')
     
     #Assign AutoScalingGroup name to query
-    # # asg = 'integration-production-egress-waf'
-    #  Not recognised as an asg = 'production-squid-proxy-ec2-messages'
-    # asg = 'integration-stage-iig-waf'
-    # Empty KeyName - asg = 'production-grafana'
     asg = input(f'{bc.OKBLUE}Please input the ASG name you are working with : {bc.ENDC}')
 
     while 1:

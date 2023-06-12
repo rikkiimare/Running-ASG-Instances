@@ -1,13 +1,14 @@
 import boto3
 from botocore.exceptions import ClientError
-import os
+#import os
 from datetime import datetime
 from bcolours import bcolours as bc
 
-import amend_aws_cred
-import find_profiles_in_credentials
+#import amend_aws_cred
+#import find_profiles_in_credentials
 import find_profiles_in_config
 import display
+import sys
 
 if __name__ == '__main__':
     
@@ -77,11 +78,8 @@ if __name__ == '__main__':
             asg_response = asg_client.describe_auto_scaling_groups(AutoScalingGroupNames=[asg])
         except Exception as ex:
             print(f"Error - {ex}")
-            print(f"{bc.FAIL} There may be an issue with the ASG name you entered{bc.ENDC}")
+            print(f"{bc.FAIL} There may be an issue with your credentials or the ASG name you entered{bc.ENDC}")
             sys.exit(1)
-
-
-
         
         # dict_you_want = {key: old_dict[key] for key in your_keys}
         # listkeys = ['AutoScalingGroupName', 'MinSize' ]
@@ -126,7 +124,7 @@ if __name__ == '__main__':
                             display.display(k,j)
         
             try:
-                loop_resp = input("\nPress any key to recheck ASG or Q to exit\n")
+                loop_resp = input("\nPress any key to recheck ASG or 'Q' to exit\n")
             except SyntaxError:
                 pass
 

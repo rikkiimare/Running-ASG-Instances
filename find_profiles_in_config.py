@@ -13,9 +13,10 @@ def find_in_conf_file():
     lines = f1.readlines()
     # move the pointer to the beginning of the file
     f1.seek(0)
-    regex = r"\[profile [0-9]{12}_S[a-zA-Z]{8}"
+    regex = r"\[profile [0-9]{12}_S[0-9a-zA-Z]{8}"
     print(f"\n{bc.OKBLUE}The following AWS account profiles are stored in your local config file.{bc.ENDC}")
-    # cycle through each line of the credentials file
+    
+    # cycle through each line of the config file
     for line in lines:
         if re.match(regex, line):
             print(line[1:-2])

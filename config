@@ -1,0 +1,35 @@
+
+
+[profile 072874872668_SreOnCall]
+sso_session =int-sso
+sso_account_id = 072874872668
+sso_role_name = SreOnCall
+region = eu-west-2
+
+[profile 072874872668_SreLead]
+sso_session = int-sso
+sso_account_id = 072874872668
+sso_role_name = SreLead
+region = eu-west-2
+
+[sso-session int-sso]
+sso_start_url = https://dwp-sso.awsapps.com/start#
+sso_region = eu-west-2
+sso_registration_scopes = sso:account:access
+
+[profile 684165538821_SreOnCall]
+sso_session = ntcg-sso
+sso_account_id = 072874872668
+sso_role_name = SreOnCall
+region = eu-west-2
+
+[profile 684165538821_SreLead]
+sso_session = ntcg-sso
+sso_account_id = 072874872668
+sso_role_name = SreLead
+region = eu-west-2
+
+[sso-session ntcg-sso]
+sso_start_url = https://dwp-sso.awsapps.com/start#
+sso_region = eu-west-2
+sso_registration_scopes = sso:account:access

@@ -1,5 +1,6 @@
 import boto3
 from botocore.exceptions import ClientError
+import subprocess
 #import os
 from datetime import datetime
 from bcolours import bcolours as bc
@@ -8,6 +9,14 @@ from bcolours import bcolours as bc
 import find_profiles_in_config
 import display
 import sys
+
+# def exec_login(sso_profile):
+#     return subprocess.run(
+#         [f"aws sso login --profile {sso_profile}"],
+#         shell=True,
+#         check=True,
+#         capture_output=True,
+#     )
 
 if __name__ == '__main__':
     

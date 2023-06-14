@@ -1,13 +1,22 @@
 from bcolours import bcolours as bc
+import pytz
+
 
 def display(asg, inst, indent=1):
       ind = '\t'*indent
       #   state = asg['State']
-      dt = asg['LaunchTime'].strftime("""%Y-%m-%d %H:%M:%S""")
-      if 'KeyName' in asg:
-            print(f"{ind}{asg['InstanceId']}{ind}{asg['InstanceType']}{ind}{inst['HealthStatus']}{ind}{ind}{inst['AvailabilityZone']}{ind}{dt}{ind}{asg['State']['Name']}{ind}{ind}{asg['KeyName']}")
+      dt = asg['LaunchTime'].astimezone(pytz.timezone('Europe/London')).strftime("""%Y-%m-%d %H:%M:%S""")
+      #if asg['State']
+      if len(asg['State']['Name']) >= 8:
+            if 'KeyName' in asg:
+                  print(f"{ind}{asg['InstanceId']}{ind}{asg['InstanceType']}{ind}{inst['HealthStatus']}{ind}{ind}{inst['AvailabilityZone']}{ind}{dt}{ind}{asg['State']['Name']}{ind}{asg['KeyName']}")
+            else:
+                  print(f"{ind}{asg['InstanceId']}{ind}{asg['InstanceType']}{ind}{inst['HealthStatus']}{ind}{ind}{inst['AvailabilityZone']}{ind}{dt}{ind}{asg['State']['Name']}{ind}--")
       else:
-            print(f"{ind}{asg['InstanceId']}{ind}{asg['InstanceType']}{ind}{inst['HealthStatus']}{ind}{ind}{inst['AvailabilityZone']}{ind}{dt}{ind}{asg['State']['Name']}{ind}{ind}--")
+            if 'KeyName' in asg:
+                  print(f"{ind}{asg['InstanceId']}{ind}{asg['InstanceType']}{ind}{inst['HealthStatus']}{ind}{ind}{inst['AvailabilityZone']}{ind}{dt}{ind}{asg['State']['Name']}{ind}{ind}{asg['KeyName']}")
+            else:
+                  print(f"{ind}{asg['InstanceId']}{ind}{asg['InstanceType']}{ind}{inst['HealthStatus']}{ind}{ind}{inst['AvailabilityZone']}{ind}{dt}{ind}{asg['State']['Name']}{ind}{ind}--")
 
 def setup(indent=1):
       ind = '\t'*indent

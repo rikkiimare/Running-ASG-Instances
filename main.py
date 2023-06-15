@@ -40,14 +40,6 @@ if __name__ == '__main__':
     # Assign profile to environ var
     os.environ['AWS_PROFILE'] = profile_name
     print(f"\n{bc.HEADER} {os.environ['AWS_PROFILE']} {bc.ENDC}")
-
-    # Works - commented out while working on the ~/.aws/credentials file
-    # s3 = boto3.client('s3')
-    # response = s3.list_buckets()
-
-    # # Output bucket names
-    # for bucket in response['Buckets']:
-    #     print(f'    {bucket["Name"]}')
     
     #Assign AutoScalingGroup name to query
     asg = input(f'{bc.OKBLUE}Please input the ASG name you are working with : {bc.ENDC}')

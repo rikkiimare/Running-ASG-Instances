@@ -2,28 +2,49 @@ import boto3
 from botocore.exceptions import ClientError
 import subprocess
 import os
+import sys
 from datetime import datetime
 from bcolours import bcolours as bc
 
 import amend_aws_cred
 import find_profiles_in_config
 import find_profiles_in_credentials
+import elevate_permissions
 import display
-import sys
 
-# def exec_login(sso_profile):
-#     return subprocess.run(
-#         [f"aws sso login --profile {sso_profile}"],
-#         shell=True,
-#         check=True,
-#         capture_output=True,
-#     )
+def re_pop_aws_config():
+    cmd = subprocess.run([f"cat ~/.aws/sso-store >> ~/.aws/config"],
+        shell=True,
+        check=True,
+        capture_output=True,
+    )
+
+def get_caller_attributes():
+    caller_id = subprocess.Popen("aws sts get-caller-identity",
+               stdout=subprocess.PIPE,
+               shell=True,
+               )
+
+    output = caller_id.stdout.readlines()
+
+    string = ' '.join(map(str, output))
+    assigner = string[string.rfind('SSO_')+4:string.rfind('_')]
+    username = string[string.rfind('/')+1:string.rfind('"')]
+    return assigner, username
+
+def exec_login(sso_profile):
+    return subprocess.run(
+        [f"aws sso login --profile {sso_profile}"],
+        shell=True,
+        check=True,
+        capture_output=True,
+    )
 
 if __name__ == '__main__':
     
     """
-    TODO: Ask user if they want to use the new 'AWS IAM Identity Center' (.aws/config) or old pasting into (.aws/credentials) way of auth
-    TODO: Bring in code from main branch for old auth
+    X: Ask user if they want to use the new 'AWS IAM Identity Center' (.aws/config) or old pasting into (.aws/credentials) way of auth
+    X: Bring in code from main branch for old auth
     TODO: New method - list profiles in (/.aws/config) DONE
           Use sso_role_name and sso_account_id to elevate perms
     TODO: Possible need to use sso-store and copy contents into .aws/config after elevation of privileges
@@ -33,7 +54,7 @@ if __name__ == '__main__':
 
     if iresponse == 'cred':
         # identify all account profiles within local credentials file
-        profile_name = find_profiles_in_credentials.find_in_cred_file()
+        prof_name = find_profiles_in_credentials.find_in_cred_file()
 
         # Display the last modified time to the screen
         amend_aws_cred.time_cred_file_mod()
@@ -49,7 +70,7 @@ if __name__ == '__main__':
             amend_aws_cred.rm_cred_from_env(creds)
 
             # Add new credentials provided into the ~/.aws/credentials file
-            profile_name = amend_aws_cred.set_cred_from_env(creds)    
+            prof_name = amend_aws_cred.set_cred_from_env(creds)    
         else:
             if "AWS_PROFILE" in os.environ:
                 print(f"{bc.OKBLUE}The script will continue with the currently set AWS_PROFILE.{bc.ENDC}")
@@ -58,13 +79,35 @@ if __name__ == '__main__':
             #     quit()
         
         # Assign profile to environ var
-        os.environ['AWS_PROFILE'] = profile_name
+        os.environ['AWS_PROFILE'] = prof_name
         print(f"\n{bc.HEADER} {os.environ['AWS_PROFILE']} {bc.ENDC}")
     elif iresponse == 'sso':
+        # Look in the ~/.aws/config file and identify the available profiles, print each profile to terminal
         find_profiles_in_config.find_in_conf_file()
         
+        # As user which of the profile to use
         prof_name = input(f'{bc.OKBLUE}\nPlease input the profile listed above you would like to use : {bc.ENDC}')
-    
+
+        # Use the profile name selected to identify the account_id and role associated.
+        sso_acc_id, sso_role_name = find_profiles_in_config.rtn_sso_values(prof_name)
+
+        # Attempt a get-caller-identity with the default profile to retrieve assigner and username attributes
+        # Assign default profile to environ var
+        os.environ['AWS_PROFILE'] = 'default'
+        sso_assigner, sso_user = get_caller_attributes()
+
+        # Use sso_role_name and sso_account_id to elevate perms
+        elevate_permissions.elevate_perms(sso_acc_id, sso_role_name, sso_assigner, sso_user)
+
+        # ~/.aws/config file is stripped out when perms are elevated.  call a function to move the contents of ~/.aws/sso-store file back into ~/.aws/config
+        re_pop_aws_config()
+
+        # Login as a profile to AWS
+        exec_login(prof_name)
+        
+
+
+
     # Set sso credentials
     session = boto3.session.Session(profile_name=prof_name)
 

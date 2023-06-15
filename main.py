@@ -20,6 +20,14 @@ import sys
 
 if __name__ == '__main__':
     
+    """
+    TODO: Ask user if they want to use the new 'AWS IAM Identity Center' (.aws/config) or old pasting into (.aws/credentials) way of auth
+    TODO: Bring in code from main branch for old auth
+    TODO: New method - list profiles in (/.aws/config) DONE
+          Use sso_role_name and sso_account_id to elevate perms
+    TODO: Possible need to use sso-store and copy contents into .aws/config after elevation of privileges
+    TODO: Run the exec_login function above.
+    """
     find_profiles_in_config.find_in_conf_file()
 
     prof_name = input(f'{bc.OKBLUE}Please input the profile listed above you would like to use : {bc.ENDC}')

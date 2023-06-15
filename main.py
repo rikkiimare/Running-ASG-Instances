@@ -1,12 +1,13 @@
 import boto3
 from botocore.exceptions import ClientError
 import subprocess
-#import os
+import os
 from datetime import datetime
 from bcolours import bcolours as bc
 
-
+import amend_aws_cred
 import find_profiles_in_config
+import find_profiles_in_credentials
 import display
 import sys
 
@@ -28,9 +29,41 @@ if __name__ == '__main__':
     TODO: Possible need to use sso-store and copy contents into .aws/config after elevation of privileges
     TODO: Run the exec_login function above.
     """
-    find_profiles_in_config.find_in_conf_file()
+    iresponse = input(f"{bc.OKBLUE}\nWould you like to authenticate by adding new credentials respond 'cred', or using 'AWS IAM Identity Center' respond 'sso'? : {bc.ENDC}")
 
-    prof_name = input(f'{bc.OKBLUE}Please input the profile listed above you would like to use : {bc.ENDC}')
+    if iresponse == 'cred':
+        # identify all account profiles within local credentials file
+        profile_name = find_profiles_in_credentials.find_in_cred_file()
+
+        # Display the last modified time to the screen
+        amend_aws_cred.time_cred_file_mod()
+
+        # Call module to accept credentials from user
+        yes_choices = ['yes', 'y']
+
+        user_resp = input(f'{bc.OKBLUE}Do you want to amend the local .aws\credentials file? (yes/no): {bc.ENDC}')
+        if user_resp.lower() in yes_choices:
+            creds = amend_aws_cred.accept_creds()
+
+            # Remove the old credentials out of the ~/.aws/credentials file
+            amend_aws_cred.rm_cred_from_env(creds)
+
+            # Add new credentials provided into the ~/.aws/credentials file
+            profile_name = amend_aws_cred.set_cred_from_env(creds)    
+        else:
+            if "AWS_PROFILE" in os.environ:
+                print(f"{bc.OKBLUE}The script will continue with the currently set AWS_PROFILE.{bc.ENDC}")
+            # else:
+            #     print(f"{bc.WARNING}AWS_PROFILE environment variable is not set.{bc.ENDC}\n{bc.FAIL}The script will exit.{bc.ENDC}")
+            #     quit()
+        
+        # Assign profile to environ var
+        os.environ['AWS_PROFILE'] = profile_name
+        print(f"\n{bc.HEADER} {os.environ['AWS_PROFILE']} {bc.ENDC}")
+    elif iresponse == 'sso':
+        find_profiles_in_config.find_in_conf_file()
+        
+        prof_name = input(f'{bc.OKBLUE}\nPlease input the profile listed above you would like to use : {bc.ENDC}')
     
     # Set sso credentials
     session = boto3.session.Session(profile_name=prof_name)

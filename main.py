@@ -21,7 +21,7 @@ def re_pop_aws_config():
 
 def get_caller_attributes():
     caller_id = subprocess.Popen("aws sts get-caller-identity",
-               stdout=subprocess.PIPE,
+               stdout=subprocess.PIPE,  #TODO build in err functionality
                shell=True,
                )
 
@@ -82,6 +82,9 @@ if __name__ == '__main__':
         os.environ['AWS_PROFILE'] = prof_name
         print(f"\n{bc.HEADER} {os.environ['AWS_PROFILE']} {bc.ENDC}")
     elif iresponse == 'sso':
+        # ~/.aws/config file is stripped out when perms are elevated.  call a function to move the contents of ~/.aws/sso-store file back into ~/.aws/config
+        re_pop_aws_config()
+        
         # Look in the ~/.aws/config file and identify the available profiles, print each profile to terminal
         find_profiles_in_config.find_in_conf_file()
         

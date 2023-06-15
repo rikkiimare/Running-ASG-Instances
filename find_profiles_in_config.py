@@ -59,7 +59,7 @@ def rtn_sso_values(find_prof='sreoncall-int'):
 
             if re.match(regex_name, line):
                 sso_name = line.removeprefix('sso_role_name = ').removesuffix('\n')
-                continue
+                break
     f1.close()
     return sso_acc, sso_name
 

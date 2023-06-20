@@ -13,14 +13,23 @@ import elevate_permissions
 import display
 
 def re_pop_aws_config():
-    cmd = subprocess.run([f"cat ~/.aws/sso-store >> ~/.aws/config"],
-        shell=True,
-        check=True,
-        capture_output=True,
-    )
+    path = "~/.aws/sso-store"
+    full_path = os.path.expanduser(path)
+
+    try:
+        f = open(full_path)
+        f.close()
+    except FileNotFoundError as e:
+        print(e)
+    else:
+        cmd = subprocess.run([f"cat ~/.aws/sso-store >> ~/.aws/config"],
+            shell=True,
+            check=True,
+            capture_output=True,
+        )
 
 def get_caller_attributes():
-    caller_id = subprocess.Popen("aws sts get-caller-identity",
+    caller_id = subprocess.Popen("aws sts get-caller-identity --profile default",
                stdout=subprocess.PIPE,  #TODO build in err functionality
                shell=True,
                )
@@ -40,17 +49,58 @@ def exec_login(sso_profile):
         capture_output=True,
     )
 
+def check_config_file_len():
+    path = "~/.aws/config"
+    full_path = os.path.expanduser(path)
+
+    # open file to read
+    f1 = open("%s" % full_path, "r")
+    return len(f1.readlines())
+
+def profile_selection():
+    # ~/.aws/config file is stripped out when perms are elevated.  call a function to move the contents of ~/.aws/sso-store file back into ~/.aws/config
+    conf_len = check_config_file_len()
+    
+    if conf_len < 10:
+        re_pop_aws_config()
+    
+    # Look in the ~/.aws/config file and identify the available profiles, print each profile to terminal
+    profiles = find_profiles_in_config.find_in_conf_file()
+    
+    # As user which of the profile to use
+    while 1:
+        prof_name = input(f'{bc.OKBLUE}\nPlease select and input one of the profile listed above you would like to use : {bc.ENDC}')
+        if prof_name in profiles:
+            break
+        else:
+            print(f"{bc.FAIL}{bc.FAIL}Please enter a valid profile from the list above.{bc.ENDC}")            
+    return prof_name
+
 if __name__ == '__main__':
     
     """
-    X: Ask user if they want to use the new 'AWS IAM Identity Center' (.aws/config) or old pasting into (.aws/credentials) way of auth
-    X: Bring in code from main branch for old auth
-    TODO: New method - list profiles in (/.aws/config) DONE
+    DONE: Ask user if they want to use the new 'AWS IAM Identity Center' (.aws/config) or old pasting into (.aws/credentials) way of auth
+    DONE: Bring in code from main branch for old auth
+    DONE: New method - list profiles in (/.aws/config) DONE
           Use sso_role_name and sso_account_id to elevate perms
-    TODO: Possible need to use sso-store and copy contents into .aws/config after elevation of privileges
-    TODO: Run the exec_login function above.
+    DONE: Possible need to use sso-store and copy contents into .aws/config after elevation of privileges
+    DONE: Run the exec_login function above.
+    DONE: a check to see if files exist.. e.g. ~/.aws/sso-store
     """
-    iresponse = input(f"{bc.OKBLUE}\nWould you like to authenticate by adding new credentials respond 'cred', or using 'AWS IAM Identity Center' respond 'sso'? : {bc.ENDC}")
+    yes_choices = ['yes', 'y']
+    auth_choices = ['cred', 'sso', 'nr']
+    # DONE: Need a warning that before this script is run the user needs to be logged into AWS SSO
+
+    while 1:
+        iresponse = input(f"{bc.OKCYAN}\nHow would you like to authenticate ? \n\t \
+                          Add new credentials respond {bc.ENDC}{bc.OKGREEN}'cred'{bc.ENDC}{bc.OKCYAN}:\n\t \
+                          Use 'AWS IAM Identity Center' respond {bc.ENDC}{bc.OKGREEN}'sso'{bc.ENDC}{bc.OKCYAN}: \n\t \
+                          Don't need to authenticate, just want to select an  profile respond {bc.ENDC}{bc.OKGREEN}'nr'{bc.ENDC}{bc.OKCYAN}: \n\t{bc.ENDC} \
+                          ")
+        if iresponse.lower() in auth_choices:
+            break
+        else:
+            print(f"{bc.FAIL}The only responses available are 'cred', 'sso' or 'nr'!{bc.ENDC}")
 
     if iresponse == 'cred':
         # identify all account profiles within local credentials file
@@ -60,7 +110,6 @@ if __name__ == '__main__':
         amend_aws_cred.time_cred_file_mod()
 
         # Call module to accept credentials from user
-        yes_choices = ['yes', 'y']
 
         user_resp = input(f'{bc.OKBLUE}Do you want to amend the local .aws\credentials file? (yes/no): {bc.ENDC}')
         if user_resp.lower() in yes_choices:
@@ -82,14 +131,8 @@ if __name__ == '__main__':
         os.environ['AWS_PROFILE'] = prof_name
         print(f"\n{bc.HEADER} {os.environ['AWS_PROFILE']} {bc.ENDC}")
     elif iresponse == 'sso':
-        # ~/.aws/config file is stripped out when perms are elevated.  call a function to move the contents of ~/.aws/sso-store file back into ~/.aws/config
-        re_pop_aws_config()
-        
-        # Look in the ~/.aws/config file and identify the available profiles, print each profile to terminal
-        find_profiles_in_config.find_in_conf_file()
-        
-        # As user which of the profile to use
-        prof_name = input(f'{bc.OKBLUE}\nPlease input the profile listed above you would like to use : {bc.ENDC}')
+        # Use the profile_selection fuction to populate prof_name var
+        prof_name = profile_selection()
 
         # Use the profile name selected to identify the account_id and role associated.
         sso_acc_id, sso_role_name = find_profiles_in_config.rtn_sso_values(prof_name)
@@ -97,6 +140,7 @@ if __name__ == '__main__':
         # Attempt a get-caller-identity with the default profile to retrieve assigner and username attributes
         # Assign default profile to environ var
         os.environ['AWS_PROFILE'] = 'default'
+        exec_login('default')
         sso_assigner, sso_user = get_caller_attributes()
 
         # Use sso_role_name and sso_account_id to elevate perms
@@ -107,9 +151,10 @@ if __name__ == '__main__':
 
         # Login as a profile to AWS
         exec_login(prof_name)
-        
-
-
+    elif iresponse == 'nr':
+        # Use the profile_selection fuction to populate prof_name var
+        prof_name = profile_selection()
+            
 
     # Set sso credentials
     session = boto3.session.Session(profile_name=prof_name)

@@ -3,6 +3,7 @@ import re
 from bcolours import bcolours as bc
 
 def find_in_conf_file():
+    profiles = []
     path = "~/.aws/config"
     full_path = os.path.expanduser(path)
     latest = ''
@@ -23,11 +24,12 @@ def find_in_conf_file():
     for line in lines:
         if re.match(regex, line):
             print(line[9:-2])
+            profiles.append(line[9:-2])
     #        latest = line[9:-2]
     f1.close()
-    #return latest
+    return profiles
 
-def rtn_sso_values(find_prof='sreoncall-int'):
+def rtn_sso_values(find_prof):  
     path = "~/.aws/config"
     full_path = os.path.expanduser(path)
     latest = ''

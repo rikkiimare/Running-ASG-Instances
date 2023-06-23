@@ -3,6 +3,7 @@ from botocore.exceptions import ClientError
 import subprocess
 import os
 import sys
+import re
 from datetime import datetime
 from bcolours import bcolours as bc
 
@@ -11,6 +12,15 @@ import find_profiles_in_config
 import find_profiles_in_credentials
 import elevate_permissions
 import display
+
+# Variable declaration
+yes_choices = ['yes', 'y', 'Y', 'YES']
+w_choices = ['1', '2']
+auth_choices = ['cred', 'sso', 'nr']
+quit_choices = ['Q', 'q', 'quit', 'QUIT']
+cw_group = ''
+cw_grep = ''
+e_exit = ''
 
 def re_pop_aws_config():
     path = "~/.aws/sso-store"
@@ -30,7 +40,7 @@ def re_pop_aws_config():
 
 def get_caller_attributes():
     caller_id = subprocess.Popen("aws sts get-caller-identity --profile default",
-               stdout=subprocess.PIPE,  #TODO build in err functionality
+               stdout=subprocess.PIPE,  #TODO: build in err functionality
                shell=True,
                )
 
@@ -76,6 +86,121 @@ def profile_selection():
             print(f"{bc.FAIL}{bc.FAIL}Please enter a valid profile from the list above.{bc.ENDC}")            
     return prof_name
 
+def report_asg_ec2_status(asg):
+    try:
+        asg_client = session.client('autoscaling', region_name='eu-west-2')
+    except ClientError as e:
+        print(e)
+        print(f"{bc.FAIL} There may be an issue with your credentials{bc.ENDC}")
+        sys.exit(1)
+
+    try:
+        ec2_client = session.client('ec2', region_name='eu-west-2')
+    except ClientError as e:
+        print(e)
+        print(f"{bc.FAIL} There may be an issue with your credentials{bc.ENDC}")
+        sys.exit(1)
+
+    try:
+        asg_response = asg_client.describe_auto_scaling_groups(AutoScalingGroupNames=[asg])
+    except Exception as ex:
+        print(f"Error - {ex}")
+        print(f"{bc.FAIL} There may be an issue with your credentials or the ASG name you entered{bc.ENDC}")
+        sys.exit(1)
+    
+    # dict_you_want = {key: old_dict[key] for key in your_keys}
+    # listkeys = ['AutoScalingGroupName', 'MinSize' ]
+    # asg_dict = {key: asg_response['AutoScalingGroups'][0] for key in listkeys}
+    instance_ids = []
+    instance_vals = []
+    asg_dict = {}
+    inst_dict = {}
+
+    if len(asg_response['AutoScalingGroups']) != 0:
+        for i in asg_response['AutoScalingGroups']:
+            asg_dict = {
+                'AutoScalingGroupName': i['AutoScalingGroupName'],
+                'MinSize': i['MinSize'],
+                'MaxSize': i['MaxSize'],
+                'DesiredCapacity': i['DesiredCapacity']
+            }
+            for k in i['Instances']:
+                inst_dict = {
+                    'InstanceId': k['InstanceId'],
+                    'InstanceType': k['InstanceType'],
+                    'HealthStatus': k['HealthStatus'],
+                    'AvailabilityZone': k['AvailabilityZone']
+                }
+                instance_vals.append(inst_dict)
+                instance_ids.append(k['InstanceId'])
+        
+        asg_dict['Instances'] = instance_vals
+
+        # print(f"  {bc.OKCYAN} ASG group set to : {bc.ENDC}{bc.WARNING}{bc.BOLD}{asg}{bc.ENDC}{bc.OKCYAN} \t Scaling Min/Desired/Max: {bc.ENDC}{bc.WARNING}{bc.BOLD}{asg_dict['MinSize']}/{asg_dict['DesiredCapacity']}/{asg_dict['MaxSize']}{bc.ENDC}")
+        # display.setup()
+
+        # ec2_response = ec2_client.describe_instances(
+        #     InstanceIds = instance_ids
+        #     )
+        
+        # for i in ec2_response['Reservations']:
+        #     for k in i['Instances']:
+        #         # display.display(k)
+        #         for j in asg_dict['Instances']:
+        #             if k['InstanceId'] == j['InstanceId']:
+        #                 display.display(k,j)
+    return ec2_client, instance_ids, asg_dict
+
+def print_asg_details(ec2_client, instance_ids, asg_dict):
+    
+    print(f"  {bc.OKCYAN} ASG group set to : {bc.ENDC}{bc.WARNING}{bc.BOLD}{asg}{bc.ENDC}{bc.OKCYAN} \t Scaling Min/Desired/Max: {bc.ENDC}{bc.WARNING}{bc.BOLD}{asg_dict['MinSize']}/{asg_dict['DesiredCapacity']}/{asg_dict['MaxSize']}{bc.ENDC}")
+    
+    display.setup()
+
+    ec2_response = ec2_client.describe_instances(
+        InstanceIds = instance_ids
+        )
+
+    for i in ec2_response['Reservations']:
+        for k in i['Instances']:
+            # display.display(k)
+            for j in asg_dict['Instances']:
+                if k['InstanceId'] == j['InstanceId']:
+                    display.display(k,j)
+
+def event_log_report(instance_ids, group, grep):
+    
+    #group = "production-BANK-VDTE-log"
+    #group = 'stage-WAF-messages'
+    #grep = "Sending"
+    # Set regex to remove ip addresses from output messages
+    ip_addr_regex = re.compile(r'\b(?:[0-9]{1,3}[\-\.]{1}){3}[0-9]{1,3}\b')
+    #instance_ids = ['i-0a3ee4a22422b9f81']
+    #instance_ids = ['i-0474c0534cc15e091', 'i-0c9ffb6a99f7577d9']
+
+    aged_20m = int((datetime.now().timestamp() - 1200) * 1000)
+    millisec = int(datetime.now().timestamp() * 1000)
+
+    logs_client = session.client('logs', region_name='eu-west-2')
+
+    print(f"{bc.WARNING}Log Group Name - {group}{bc.ENDC}")
+    for instance in instance_ids:
+        print(f"\n {bc.OKGREEN}Instance - {instance}{bc.ENDC}")
+        responses = logs_client.get_log_events(
+            logGroupName=group,
+            logStreamName=instance,
+            startTime=aged_20m,
+            endTime=millisec,
+            limit=49
+            )
+
+        for events in responses['events']:
+            if grep in events['message']:
+                print(f"  {re.sub(ip_addr_regex, '', events['message'])}")
+
+def attribute_grep_setting():
+    pass
+
 if __name__ == '__main__':
     
     """
@@ -87,8 +212,8 @@ if __name__ == '__main__':
     DONE: Run the exec_login function above.
     DONE: a check to see if files exist.. e.g. ~/.aws/sso-store
     """
-    yes_choices = ['yes', 'y']
-    auth_choices = ['cred', 'sso', 'nr']
+
+    i = 0
     # DONE: Need a warning that before this script is run the user needs to be logged into AWS SSO
 
     while 1:
@@ -159,84 +284,60 @@ if __name__ == '__main__':
     # Set sso credentials
     session = boto3.session.Session(profile_name=prof_name)
 
+
     #Assign AutoScalingGroup name to query
     asg = input(f'{bc.OKBLUE}Please input the ASG name you are working with : {bc.ENDC}')
 
-    while 1:
-        try:
-            asg_client = session.client('autoscaling', region_name='eu-west-2')
-        except ClientError as e:
-            print(e)
-            print(f"{bc.FAIL} There may be an issue with your credentials{bc.ENDC}")
-            sys.exit(1)
+    while i != 1:
+        wresponse = input(f"\n{bc.OKBLUE}What would you like to check? {bc.ENDC}\n\t\
+                          Enter 1 - to check AutoScaling Group \n\t\
+                          Enter 2 - to check the Cloudwatch logs \n\t\
+                          If you would like to exit the script input 'Q' \n\t\
+                          ")
+                        # FIXME: If you select option 2 the first time through there is nothing in the instance varibale
+        if wresponse in w_choices:
+            if wresponse == '1':
+                while 1:
+                    #TODO: Put in a if loop to either look at the ASG or the logs
+                    instances = []
+                    ec2_client, instances, asg_dict = report_asg_ec2_status(asg)
+                    print_asg_details(ec2_client, instances, asg_dict)
 
-        try:
-            ec2_client = session.client('ec2', region_name='eu-west-2')
-        except ClientError as e:
-            print(e)
-            print(f"{bc.FAIL} There may be an issue with your credentials{bc.ENDC}")
-            sys.exit(1)
+                    try:
+                        loop_resp = input("\nPress any key to recheck ASG or 'Q' to go back to the original menu.\n")
+                    except SyntaxError:
+                        pass
 
-        try:
-            asg_response = asg_client.describe_auto_scaling_groups(AutoScalingGroupNames=[asg])
-        except Exception as ex:
-            print(f"Error - {ex}")
-            print(f"{bc.FAIL} There may be an issue with your credentials or the ASG name you entered{bc.ENDC}")
-            sys.exit(1)
-        
-        # dict_you_want = {key: old_dict[key] for key in your_keys}
-        # listkeys = ['AutoScalingGroupName', 'MinSize' ]
-        # asg_dict = {key: asg_response['AutoScalingGroups'][0] for key in listkeys}
-        instance_ids = []
-        instance_vals = []
-        asg_dict = {}
-        inst_dict = {}
+                    if loop_resp in quit_choices:
+                        break
+            elif wresponse == '2':    
+                while 1:
+                    ec2_client, instances, asg_dict = report_asg_ec2_status(asg)
+                    if cw_group != '':
+                        event_log_report(instances, cw_group, cw_grep)
+                    else:
+                        cw_group = input("Please input the log group you would like to monitor.\n")
+                        cw_grep = input("Please enter any keywords you would like to search for in your log message.\n")
+                        event_log_report(instances, cw_group, cw_grep)
+                    
+                    try:
+                        cw_loop_resp = input("\nPress any key to recheck CloudWatch logs or 'Q' to go back to the original menu.\n")
+                    except SyntaxError:
+                        pass
 
-        if len(asg_response['AutoScalingGroups']) != 0:
-            for i in asg_response['AutoScalingGroups']:
-                asg_dict = {
-                    'AutoScalingGroupName': i['AutoScalingGroupName'],
-                    'MinSize': i['MinSize'],
-                    'MaxSize': i['MaxSize'],
-                    'DesiredCapacity': i['DesiredCapacity']
-                }
-                for k in i['Instances']:
-                    inst_dict = {
-                        'InstanceId': k['InstanceId'],
-                        'InstanceType': k['InstanceType'],
-                        'HealthStatus': k['HealthStatus'],
-                        'AvailabilityZone': k['AvailabilityZone']
-                    }
-                    instance_vals.append(inst_dict)
-                    instance_ids.append(k['InstanceId'])
-            
-            asg_dict['Instances'] = instance_vals
-            
-            print(f"  {bc.OKCYAN} ASG group set to : {bc.ENDC}{bc.WARNING}{bc.BOLD}{asg}{bc.ENDC}{bc.OKCYAN} \t Scaling Min/Desired/Max: {bc.ENDC}{bc.WARNING}{bc.BOLD}{asg_dict['MinSize']}/{asg_dict['DesiredCapacity']}/{asg_dict['MaxSize']}{bc.ENDC}")
-            display.setup()
+                    if cw_loop_resp in quit_choices:
+                        break                    
 
-            ec2_response = ec2_client.describe_instances(
-                InstanceIds = instance_ids
-                )
-            
-            for i in ec2_response['Reservations']:
-                for k in i['Instances']:
-                    # display.display(k)
-                    for j in asg_dict['Instances']:
-                        if k['InstanceId'] == j['InstanceId']:
-                            display.display(k,j)
-        
-            try:
-                loop_resp = input("\nPress any key to recheck ASG or 'Q' to exit\n")
-            except SyntaxError:
-                pass
 
-            if loop_resp == 'Q':
-                break
         else:
-            print("There seems to be an issue with the ASG group provided.")
-            break
+            e_exit = input("Would you like to exit the script? (Y/N)\n")
+            
+        if e_exit in yes_choices:
+            i = 1
 
+
+
+        
 
 
 

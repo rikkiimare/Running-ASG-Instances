@@ -18,7 +18,7 @@ def find_in_conf_file():
     #regex = r"\[profile s[0-9a-zA-Z]{8}-i[0-9a-zA-Z]{2}"
     regex = r"\[profile"
 
-    print(f"\n{bc.OKBLUE}The following AWS account profiles are stored in your local config file.{bc.ENDC}")
+    print(f"\n{bc.OKCYAN}The following AWS account profiles are stored in your local config file.{bc.ENDC}")
     
     # cycle through each line of the config file
     for line in lines:
@@ -47,7 +47,7 @@ def rtn_sso_values(find_prof):
     regex_acc = r"sso_account_id = [0-9]{12}"
     regex_name = r"sso_role_name = *"
 
-    print(f"\n{bc.OKBLUE}The following AWS account profiles are stored in your local config file.{bc.ENDC}")
+    print(f"\n{bc.OKCYAN}The following AWS account profiles are stored in your local config file.{bc.ENDC}")
     
     # cycle through each line of the config file
     for line in lines:

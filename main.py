@@ -136,19 +136,6 @@ def report_asg_ec2_status(asg):
         
         asg_dict['Instances'] = instance_vals
 
-        # print(f"  {bc.OKCYAN} ASG group set to : {bc.ENDC}{bc.WARNING}{bc.BOLD}{asg}{bc.ENDC}{bc.OKCYAN} \t Scaling Min/Desired/Max: {bc.ENDC}{bc.WARNING}{bc.BOLD}{asg_dict['MinSize']}/{asg_dict['DesiredCapacity']}/{asg_dict['MaxSize']}{bc.ENDC}")
-        # display.setup()
-
-        # ec2_response = ec2_client.describe_instances(
-        #     InstanceIds = instance_ids
-        #     )
-        
-        # for i in ec2_response['Reservations']:
-        #     for k in i['Instances']:
-        #         # display.display(k)
-        #         for j in asg_dict['Instances']:
-        #             if k['InstanceId'] == j['InstanceId']:
-        #                 display.display(k,j)
     return ec2_client, instance_ids, asg_dict
 
 def print_asg_details(ec2_client, instance_ids, asg_dict):
@@ -236,7 +223,7 @@ if __name__ == '__main__':
 
         # Call module to accept credentials from user
 
-        user_resp = input(f'{bc.OKBLUE}Do you want to amend the local .aws\credentials file? (yes/no): {bc.ENDC}')
+        user_resp = input(f'{bc.OKCYAN}Do you want to amend the local .aws\credentials file? (yes/no): {bc.ENDC}')
         if user_resp.lower() in yes_choices:
             creds = amend_aws_cred.accept_creds()
 
@@ -247,7 +234,7 @@ if __name__ == '__main__':
             prof_name = amend_aws_cred.set_cred_from_env(creds)    
         else:
             if "AWS_PROFILE" in os.environ:
-                print(f"{bc.OKBLUE}The script will continue with the currently set AWS_PROFILE.{bc.ENDC}")
+                print(f"{bc.OKCYAN}The script will continue with the currently set AWS_PROFILE.{bc.ENDC}")
             # else:
             #     print(f"{bc.WARNING}AWS_PROFILE environment variable is not set.{bc.ENDC}\n{bc.FAIL}The script will exit.{bc.ENDC}")
             #     quit()
@@ -286,15 +273,15 @@ if __name__ == '__main__':
 
 
     #Assign AutoScalingGroup name to query
-    asg = input(f'{bc.OKBLUE}Please input the ASG name you are working with : {bc.ENDC}')
+    asg = input(f'{bc.OKCYAN}Please input the ASG name you are working with : {bc.ENDC}')
 
     while i != 1:
-        wresponse = input(f"\n{bc.OKBLUE}What would you like to check? {bc.ENDC}\n\t\
+        wresponse = input(f"\n{bc.OKCYAN}What would you like to check? \n\t\
                           Enter 1 - to check AutoScaling Group \n\t\
-                          Enter 2 - to check the Cloudwatch logs \n\t\
-                          If you would like to exit the script input 'Q' \n\t\
+                          Enter 2 - to check the Cloudwatch logs {bc.ENDC}\n\t\
+                          {bc.OKBLUE}If you would like to exit the script input 'Q'{bc.ENDC}\n\t\
                           ")
-                        # FIXME: If you select option 2 the first time through there is nothing in the instance varibale
+                        # DONE: If you select option 2 the first time through there is nothing in the instance varibale
         if wresponse in w_choices:
             if wresponse == '1':
                 while 1:
@@ -304,7 +291,7 @@ if __name__ == '__main__':
                     print_asg_details(ec2_client, instances, asg_dict)
 
                     try:
-                        loop_resp = input("\nPress any key to recheck ASG or 'Q' to go back to the original menu.\n")
+                        loop_resp = input(f"\n{bc.OKCYAN}Press any key to recheck ASG or 'Q' to go back to the original menu.{bc.ENDC}\n")
                     except SyntaxError:
                         pass
 
@@ -316,12 +303,12 @@ if __name__ == '__main__':
                     if cw_group != '':
                         event_log_report(instances, cw_group, cw_grep)
                     else:
-                        cw_group = input("Please input the log group you would like to monitor.\n")
-                        cw_grep = input("Please enter any keywords you would like to search for in your log message.\n")
+                        cw_group = input(f"{bc.OKCYAN}Please input the log group you would like to monitor.{bc.ENDC}\n")
+                        cw_grep = input(f"{bc.OKCYAN}Please enter any keywords you would like to search for in your log message.{bc.ENDC}\n")
                         event_log_report(instances, cw_group, cw_grep)
                     
                     try:
-                        cw_loop_resp = input("\nPress any key to recheck CloudWatch logs or 'Q' to go back to the original menu.\n")
+                        cw_loop_resp = input(f"\n{bc.OKCYAN}Press any key to recheck CloudWatch logs or 'Q' to go back to the original menu.{bc.ENDC}\n")
                     except SyntaxError:
                         pass
 
@@ -330,7 +317,7 @@ if __name__ == '__main__':
 
 
         else:
-            e_exit = input("Would you like to exit the script? (Y/N)\n")
+            e_exit = input(f"{bc.OKCYAN}Would you like to exit the script? (Y/N){bc.ENDC}\n")
             
         if e_exit in yes_choices:
             i = 1

@@ -5,7 +5,8 @@ from bcolours import bcolours as bc
 def find_in_cred_file():
     path = "~/.aws/credentials"
     full_path = os.path.expanduser(path)
-    
+    latest = ''
+
     # open file to read
     f1 = open("%s" % full_path, "r")
     #read content of the file
@@ -20,6 +21,8 @@ def find_in_cred_file():
             print(line)
             latest = line
     f1.close()
+
+
     return latest[1:-2]
 
 if __name__ == '__main__':

@@ -15,7 +15,6 @@ def find_in_conf_file():
     # move the pointer to the beginning of the file
     f1.seek(0)
     # set regedt to search for profile
-    #regex = r"\[profile s[0-9a-zA-Z]{8}-i[0-9a-zA-Z]{2}"
     regex = r"\[profile"
 
     print(f"\n{bc.OKCYAN}The following AWS account profiles are stored in your local config file.{bc.ENDC}")

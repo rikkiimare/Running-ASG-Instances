@@ -14,12 +14,10 @@ import elevate_permissions
 import display
 
 # Variable declaration
-yes_choices = ['yes', 'y', 'Y', 'YES']
+yes_choices = ['yes', 'y']
 w_choices = ['1', '2']
 auth_choices = ['cred', 'sso', 'nr']
-quit_choices = ['Q', 'q', 'quit', 'QUIT']
-cw_group = ''
-cw_grep = ''
+quit_choices = ['q', 'quit']
 e_exit = ''
 
 def re_pop_aws_config():
@@ -203,14 +201,15 @@ if __name__ == '__main__':
     i = 0
     # DONE: Need a warning that before this script is run the user needs to be logged into AWS SSO
 
-    while 1:
+    loop_exit = False
+    while loop_exit is False:
         iresponse = input(f"{bc.OKCYAN}\nHow would you like to authenticate ? \n\t \
                           Add new credentials respond {bc.ENDC}{bc.OKGREEN}'cred'{bc.ENDC}{bc.OKCYAN}:\n\t \
                           Use 'AWS IAM Identity Center' respond {bc.ENDC}{bc.OKGREEN}'sso'{bc.ENDC}{bc.OKCYAN}: \n\t \
                           Don't need to authenticate, just want to select an  profile respond {bc.ENDC}{bc.OKGREEN}'nr'{bc.ENDC}{bc.OKCYAN}: \n\t{bc.ENDC} \
                           ")
         if iresponse.lower() in auth_choices:
-            break
+            loop_exit = True
         else:
             print(f"{bc.FAIL}The only responses available are 'cred', 'sso' or 'nr'!{bc.ENDC}")
 
@@ -271,11 +270,8 @@ if __name__ == '__main__':
     # Set sso credentials
     session = boto3.session.Session(profile_name=prof_name)
 
-
-    #Assign AutoScalingGroup name to query
-    asg = input(f'{bc.OKCYAN}Please input the ASG name you are working with : {bc.ENDC}')
-
-    while i != 1:
+    loop_exit = False
+    while loop_exit is False:
         wresponse = input(f"\n{bc.OKCYAN}What would you like to check? \n\t\
                           Enter 1 - to check AutoScaling Group \n\t\
                           Enter 2 - to check the Cloudwatch logs {bc.ENDC}\n\t\
@@ -284,8 +280,11 @@ if __name__ == '__main__':
                         # DONE: If you select option 2 the first time through there is nothing in the instance varibale
         if wresponse in w_choices:
             if wresponse == '1':
-                while 1:
-                    #TODO: Put in a if loop to either look at the ASG or the logs
+                w_quit = False
+                while w_quit is False:
+                    #DONE: Put in a if loop to either look at the ASG or the logs
+                    #Assign AutoScalingGroup name to query
+                    asg = input(f'{bc.OKCYAN}Please input the ASG name you are working with : {bc.ENDC}')
                     instances = []
                     ec2_client, instances, asg_dict = report_asg_ec2_status(asg)
                     print_asg_details(ec2_client, instances, asg_dict)
@@ -295,32 +294,50 @@ if __name__ == '__main__':
                     except SyntaxError:
                         pass
 
-                    if loop_resp in quit_choices:
-                        break
-            elif wresponse == '2':    
-                while 1:
+                    if loop_resp.lower() in quit_choices:
+                        w_quit = True
+            elif wresponse == '2':
+                w_quit = False   
+                while w_quit is False:
+                    #See if asg variable has been set
+                    try:
+                        asg
+                    except NameError:
+                        asg = input(f'{bc.OKCYAN}Please input the ASG name you are working with : {bc.ENDC}')
+                    else:
+                        pass
+
                     ec2_client, instances, asg_dict = report_asg_ec2_status(asg)
-                    if cw_group != '':
+                    try:
+                        cw_group
+                    except NameError:
+                        cw_group = input(f"{bc.OKCYAN}Please input the log group you would like to monitor : {bc.ENDC}")
+                        cw_grep = input(f"{bc.OKCYAN}Please enter any keywords you would like to search for in your log message : {bc.ENDC}")
                         event_log_report(instances, cw_group, cw_grep)
                     else:
-                        cw_group = input(f"{bc.OKCYAN}Please input the log group you would like to monitor.{bc.ENDC}\n")
-                        cw_grep = input(f"{bc.OKCYAN}Please enter any keywords you would like to search for in your log message.{bc.ENDC}\n")
                         event_log_report(instances, cw_group, cw_grep)
+
+                    # if cw_group != '':
+                    #     event_log_report(instances, cw_group, cw_grep)
+                    # else:
+                    #     cw_group = input(f"{bc.OKCYAN}Please input the log group you would like to monitor.{bc.ENDC}\n")
+                    #     cw_grep = input(f"{bc.OKCYAN}Please enter any keywords you would like to search for in your log message.{bc.ENDC}\n")
+                    #     event_log_report(instances, cw_group, cw_grep)
                     
                     try:
                         cw_loop_resp = input(f"\n{bc.OKCYAN}Press any key to recheck CloudWatch logs or 'Q' to go back to the original menu.{bc.ENDC}\n")
                     except SyntaxError:
                         pass
 
-                    if cw_loop_resp in quit_choices:
-                        break                    
+                    if cw_loop_resp.lower() in quit_choices:
+                        w_quit = True            
 
 
         else:
-            e_exit = input(f"{bc.OKCYAN}Would you like to exit the script? (Y/N){bc.ENDC}\n")
+            e_exit = input(f"{bc.OKCYAN}Are you sure you would you like to exit the script? (Y/N){bc.ENDC}\n")
             
-        if e_exit in yes_choices:
-            i = 1
+        if e_exit.lower() in yes_choices:
+            loop_exit = True
 
 
 

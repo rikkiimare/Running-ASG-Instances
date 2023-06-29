@@ -284,7 +284,13 @@ if __name__ == '__main__':
                 while w_quit is False:
                     #DONE: Put in a if loop to either look at the ASG or the logs
                     #Assign AutoScalingGroup name to query
-                    asg = input(f'{bc.OKCYAN}Please input the ASG name you are working with : {bc.ENDC}')
+                    try:
+                        asg
+                    except NameError:
+                        asg = input(f'{bc.OKCYAN}Please input the ASG name you are working with : {bc.ENDC}')
+                    else:
+                        pass
+
                     instances = []
                     ec2_client, instances, asg_dict = report_asg_ec2_status(asg)
                     print_asg_details(ec2_client, instances, asg_dict)
@@ -306,8 +312,10 @@ if __name__ == '__main__':
                         asg = input(f'{bc.OKCYAN}Please input the ASG name you are working with : {bc.ENDC}')
                     else:
                         pass
-
+                        
+                    instances = []
                     ec2_client, instances, asg_dict = report_asg_ec2_status(asg)
+                    
                     try:
                         cw_group
                     except NameError:
@@ -316,13 +324,6 @@ if __name__ == '__main__':
                         event_log_report(instances, cw_group, cw_grep)
                     else:
                         event_log_report(instances, cw_group, cw_grep)
-
-                    # if cw_group != '':
-                    #     event_log_report(instances, cw_group, cw_grep)
-                    # else:
-                    #     cw_group = input(f"{bc.OKCYAN}Please input the log group you would like to monitor.{bc.ENDC}\n")
-                    #     cw_grep = input(f"{bc.OKCYAN}Please enter any keywords you would like to search for in your log message.{bc.ENDC}\n")
-                    #     event_log_report(instances, cw_group, cw_grep)
                     
                     try:
                         cw_loop_resp = input(f"\n{bc.OKCYAN}Press any key to recheck CloudWatch logs or 'Q' to go back to the original menu.{bc.ENDC}\n")
